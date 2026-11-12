@@ -1,6 +1,6 @@
 # Admissions Counselling Slots: Original-Cohort Attribution Report
 
-A MySQL 8 query (ported from Amazon Redshift) that builds a clean, deduplicated report of booked admissions counselling sessions, attributing each booking to the cohort the student **originally** applied to and the entrance fee they **actually** paid.
+A MySQL 8 query that builds a clean, deduplicated report of booked admissions counselling sessions, attributing each booking to the cohort the student **originally** applied to and the entrance fee they **actually** paid.
 
 ## Problem Statement
 
@@ -38,16 +38,11 @@ The query is built as a pipeline of CTEs:
 | `source_data` | Joins, cohort resolution, enrichment and filters |
 | `ranked` | Deduplication to one row per slot |
 
-## Redshift → MySQL Notes
+## Requirements
 
-| Redshift | MySQL 8 |
-|---|---|
-| `"schema"."table"` | `` `schema`.`table` `` |
-| `JSON_EXTRACT_PATH_TEXT(col, 'a', 'b', TRUE)` | `JSON_UNQUOTE(JSON_EXTRACT(col, '$.a.b'))` |
-| `JSON_EXTRACT_ARRAY_ELEMENT_TEXT(..., 0)` | `$.path[0]` inside the JSON path |
-| `CAST(x AS BIGINT)` | `CAST(x AS SIGNED)` |
-| `CAST(x AS VARCHAR)` | `CAST(x AS CHAR)` |
-| `LAST_VALUE(x IGNORE NULLS)` | Running `COUNT(x)` to form groups, then `MAX(x)` per group |
-| Case-sensitive `LIKE` | `LIKE BINARY` |
+- MySQL 8.0 or later (the query uses CTEs and window functions).
+- JSON columns must contain valid JSON. If they are text columns that may hold malformed values, wrap extractions in `CASE WHEN JSON_VALID(col) THEN ... END`.
 
-Requirements: MySQL 8.0+. JSON columns must contain valid JSON; if they are text columns that may hold malformed values, wrap extractions in `CASE WHEN JSON_VALID(col) THEN ... END`.
+## Usage
+
+Run `admissions_booked_slots.sql` against your database. Adjust the reporting start date (`DATE '2026-10-21'`) as needed; the end date is always `CURRENT_DATE`.
